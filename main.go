@@ -15,6 +15,11 @@ var bufferSize int = 3
 
 const bufferDrainInterval time.Duration = 10 * time.Second
 
+// Функция логирования для вывода в консоль
+func log(message string) {
+	fmt.Println(message)
+}
+
 func FilterPositive(done <-chan struct{}, inputData <-chan int) <-chan int {
 	onlyPositiveData := make(chan int)
 	go func() {
@@ -28,8 +33,10 @@ func FilterPositive(done <-chan struct{}, inputData <-chan int) <-chan int {
 					return
 				}
 				if value > 0 {
+					log(fmt.Sprintf("Фильтрация положительных чисел: %d", value))
 					select {
 					case onlyPositiveData <- value:
+						log(fmt.Sprintf("Передано положительное число: %d", value))
 					case <-done:
 						return
 					}
@@ -53,8 +60,10 @@ func FilterThree(done <-chan struct{}, inputData <-chan int) <-chan int {
 					return
 				}
 				if value%3 == 0 {
+					log(fmt.Sprintf("Фильтрация чисел кратных 3: %d", value))
 					select {
 					case onlyThreeData <- value:
+						log(fmt.Sprintf("Переданно число кратное 3: %d", value))
 					case <-done:
 					}
 				}
@@ -73,18 +82,21 @@ func main() {
 			defer close(done)
 			scanner := bufio.NewScanner(os.Stdin)
 			var str string
-			fmt.Println("Press enter to continue")
+			fmt.Println("Введите число для продолжения")
+			log("Введите число для продолжния или stop для завершения")
 			for {
 				scanner.Scan()
 				str = scanner.Text()
 				if strings.EqualFold(str, "stop") {
 					fmt.Println("Программа завершила работу")
+					log("Программа завершила работу")
 					close(output)
 					return
 				}
 				val, err := strconv.Atoi(scanner.Text())
 				if err != nil {
 					fmt.Println("Только int!")
+					log("Ошибка: только int!")
 					continue
 				}
 				output <- val
@@ -111,6 +123,7 @@ func main() {
 					}
 					mu.Lock()
 					r.Value = value
+					log(fmt.Sprintf("Добавлено в буфер: %d", value))
 					r = r.Next()
 					mu.Unlock()
 				}
@@ -128,6 +141,7 @@ func main() {
 						if p != nil {
 							select {
 							case bufferedIntChan <- p.(int):
+								log(fmt.Sprintf("Извлечено из буфера: %d", p.(int)))
 							case <-done:
 								return
 							}
@@ -149,6 +163,7 @@ func main() {
 				return
 			case val := <-input:
 				fmt.Printf("Обраюотаны данные: %d\n", val)
+				log(fmt.Sprintf("Обработаны данные: %d", val))
 			}
 		}
 	}
